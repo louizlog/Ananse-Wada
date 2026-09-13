@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Wada">
+<meta name="theme-color" content="#2b2b2d">
+<title>Wada</title>
+<style>
+:root{
+  --ink:#f2f2f0; --ink-dim:#a5a5a1; --ink-faint:#76766f;
+  --bg:#2b2b2d; --panel:#38383a; --line:#4a4a4c;
+  --stage:#8a8a88;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;
+  font-size:16px; line-height:1.5;
+  padding:env(safe-area-inset-top) 0 calc(env(safe-area-inset-bottom) + 24px);
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:560px;margin:0 auto;padding:0 16px}
+header{padding:20px 0 14px}
+h1{font-size:19px;font-weight:600;letter-spacing:-0.01em;margin:0}
+header p{margin:3px 0 0;font-size:13px;color:var(--ink-faint)}
+
+.bar{
+  position:sticky;top:0;z-index:20;background:var(--bg);
+  padding:10px 0 12px;border-bottom:1px solid var(--line);margin-bottom:14px;
+}
+.slots{display:flex;gap:8px;align-items:stretch}
+.slot{
+  flex:1;min-width:0;display:flex;align-items:center;gap:9px;
+  background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:7px 9px;
+}
+.slot.empty{border-style:dashed;color:var(--ink-faint)}
+.chip{width:30px;height:30px;border-radius:6px;flex:none;border:1px solid rgba(0,0,0,.25)}
+.slot .nm{font-size:12.5px;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.slot .hx{font-size:11px;color:var(--ink-faint);font-variant-numeric:tabular-nums}
+.x{margin-left:auto;flex:none;background:none;border:0;color:var(--ink-faint);font-size:19px;line-height:1;padding:2px 4px;cursor:pointer}
+
+.tools{display:flex;gap:8px;margin-bottom:12px}
+input[type=search]{
+  flex:1;min-width:0;background:var(--panel);border:1px solid var(--line);color:var(--ink);
+  border-radius:9px;padding:9px 11px;font-size:15px;font-family:inherit;
+}
+input[type=search]::placeholder{color:var(--ink-faint)}
+input[type=search]:focus{outline:2px solid var(--ink-dim);outline-offset:-1px}
+.btn{
+  background:var(--panel);border:1px solid var(--line);color:var(--ink);
+  border-radius:9px;padding:9px 13px;font-size:14px;font-family:inherit;cursor:pointer;white-space:nowrap;
+}
+.btn:active{background:var(--line)}
+.btn:focus-visible{outline:2px solid var(--ink-dim);outline-offset:2px}
+
+.stage{background:var(--stage);border-radius:12px;padding:9px;margin-bottom:20px}
+.grid{display:grid;grid-template-columns:repeat(8,1fr);gap:5px}
+.sw{
+  aspect-ratio:1;border-radius:5px;border:1px solid rgba(0,0,0,.22);padding:0;cursor:pointer;
+  position:relative;
+}
+.sw[aria-pressed=true]{box-shadow:0 0 0 2px #fff,0 0 0 4px #1a1a1a}
+.sw:focus-visible{outline:2px solid #fff;outline-offset:2px}
+
+#shot{width:100%;border-radius:10px;display:none;margin-bottom:16px;border:1px solid var(--line)}
+
+h2{font-size:15px;font-weight:600;margin:0 0 3px}
+.sub{font-size:13px;color:var(--ink-dim);margin:0 0 14px}
+section{margin-bottom:26px}
+
+.pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px 12px}
+.p{display:flex;align-items:center;gap:9px;min-width:0}
+.p .chip{width:26px;height:26px}
+.p .nm{font-size:12.5px;line-height:1.25;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.p .ct{font-size:11px;color:var(--ink-faint)}
+
+.combo{border-top:1px solid var(--line);padding:13px 0}
+.combo:last-child{border-bottom:1px solid var(--line)}
+.combo .no{font-size:11.5px;color:var(--ink-faint);font-variant-numeric:tabular-nums;margin-bottom:7px}
+.row{display:flex;gap:6px}
+.cell{flex:1;min-width:0}
+.cell .bar2{height:46px;border-radius:6px;border:1px solid rgba(0,0,0,.22)}
+.cell .nm{font-size:10.5px;color:var(--ink-dim);margin-top:4px;line-height:1.25}
+.cell.star .bar2{box-shadow:inset 0 0 0 2px rgba(255,255,255,.85)}
+
+.note{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:13px;font-size:13.5px;color:var(--ink-dim);line-height:1.6}
+@media (prefers-reduced-motion:no-preference){.sw{transition:box-shadow .12s ease}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Wada</h1>
+  <p>348 Farbkombinationen aus Sanzo Wadas Farbwörterbuch, 1933</p>
+</header>
+
+<div class="bar">
+  <div class="slots" id="slots"></div>
+</div>
+
+<div class="tools">
+  <input type="search" id="q" placeholder="Farbe suchen" autocomplete="off" aria-label="Farbe nach Namen suchen">
+  <button class="btn" id="pick">Foto</button>
+  <input type="file" id="file" accept="image/*" hidden>
+</div>
+
+<canvas id="shot" aria-label="Ausgewähltes Foto, zum Farbe greifen antippen"></canvas>
+
+<div class="stage">
+  <div class="grid" id="grid"></div>
+</div>
+
+<div id="out"></div>
+
+</div>
+<script>
+const D=[["Hermosa Pink","f9c1ce",[176,227,273]],["Corinthian Pink","f8b6ba",[27,43,87,97,128,169,174,206,246,254,264,342]],["Cameo Pink","e0b3b6",[101,105,116,120,165,231]],["Fawn","d1b0a7",[18,125,308]],["Light Brown Drab","b59392",[35,68,185,191,223,239,244,268,285,321]],["Coral Red","f58e84",[92,123,320,332]],["Fresh Color","f6917e",[240]],["Grenadine Pink","f48067",[6,21,112,166,193,201,230,300,315,341]],["Eosine Pink","f37f94",[34,59,90,108,134,153,197,242,248,276,287,314,327,336]],["Spinel Red","f27291",[14,147,165,184,195,224,277]],["Old Rose","d46d7a",[55,162,260,265]],["Eugenia Red A","e2625e",[284]],["Eugenia Red B","da525d",[17,77,252,262,270,280,282,325]],["Raw Sienna","bb7125",[3,13,33,70,86,130,131,182,243,247,252,255,268,269,279,293,298,319,327]],["Vinaceous Tawny","c56127",[40,85,244]],["Jasper Red","eb5324",[155,194,216,219]],["Spectrum Red","e31f26",[257,266,301,322]],["Red Orange","dd4027",[31,164,179,241,264]],["Etruscan Red","c55347",[25,47,97,137,152,185,275]],["Burnt Sienna","ae5224",[198,242,263,285,286,297,312,333,343]],["Ochre Red","ab544d",[199,283]],["Scarlet","cb2f43",[136,308,332]],["Carmine","cc1236",[39,117,122,154,225,232,307,313]],["Indian Lake","c53c69",[299,331]],["Rosolanc Purple","b73f74",[48,144,170,204,277,346]],["Pomegranite Purple","b71f57",[220,271]],["Hydrangea Red","a94151",[142]],["Brick Red","a84222",[37,108,246,322,328]],["Carmine Red","a62c37",[35,51,104,130,181,200,221,228,233,237,245,338]],["Pompeian Red","ab2439",[30,71,120,212,311,324]],["Red","a72144",[251,261]],["Brown","7c4226",[110,121,145,161]],["Hay's Russet","793327",[58,82,95,152,186,231,249,304,314,336,345]],["Vandyke Red","82241f",[16,133,147,316,335]],["Pansy Purple","7d133a",[157,273]],["Pale Burnt Lake","802626",[124,171,177,205,217,258,269,283]],["Violet Red","642d5e",[9]],["Vistoris Lake","6d4145",[63,91,165,226,290,337]],["Sulpher Yellow","f5ecc2",[52,72,80,104,132,135,151,208,246,254,270,294,296,310,315,320,321,326]],["Pale Lemon Yellow","ffefae",[3,31,60,76,99,109,111,169,185,195,203,228,241,261,272,281,290,292,336]],["Naples Yellow","fbe6a0",[14,115,166,193,303,325]],["Ivory Buff","ebd3a2",[11,50,94,102,126,178,184,190,209,214,235,243,262,266,301,343]],["Seashell Pink","fdd4bd",[45,84,88,113,150,176,194,276,334]],["Light Pinkish Cinnamon","fcc79b",[317]],["Pinkish Cinnamon","eeb480",[78,161,175,232,258,263,292,305,310]],["Cinnamon Buff","fdc57e",[23,127,137,180,210,234,246,323,344]],["Cream Yellow","fdbf68",[122,192,215,226,267,278,294,295,300,302,304,311,329,342]],["Golden Yellow","f3a257",[26,81,132,138,140,179,206,229,309,315]],["Vinaceous Cinnamon","eea78c",[203,205,213,256,260,279,299]],["Ochraceous Salmon","d8a37b",[32,71,121,186,217,220,223,238,296,339]],["Isabella Color","c5a56e",[4,12,241,292]],["Maple","c59f6b",[282]],["Olive Buff","c1c494",[83,175,200,330,348]],["Ecru","c2ae93",[167,249,275,279,292,302,317,327]],["Yellow","fff200",[22,62,68,154,240,251,295,313]],["Lemon Yellow","f8ed43",[45,123,138,158,168,173,189,210,253,259,289,298,306,317,333]],["Apricot Yellow","ffdd00",[107,129,163,198,213,247,265,284,305,319]],["Pyrite Yellow","cab356",[239,250,255,287]],["Olive Ocher","d6b43e",[66,148,149,156,157,249,278]],["Yellow Ocher","e2b540",[42,96,118,124,126,191,222,325]],["Orange Yellow","fcb315",[114,148,153,164,170,257,286,338]],["Yellow Orange","f99d1b",[2,53,89,151,171,209,222,235,267,288,297,312,319,335]],["Apricot Orange","f68c50",[211,253,309,328]],["Orange","f37420",[7,46,141,144,149,256,272]],["Peach Red","f15a30",[115,250,274,285,298,303,326,340]],["English Red","d96629",[1,131,190,308,339]],["Cinnamon Rufous","c27544",[8,10,103,158,172,204,206]],["Orange Rufous","c16b27",[91,102,222]],["Sulphine Yellow","c19f2c",[36,65,142,160,252]],["Khaki","bc892b",[129,146,159,236,248]],["Citron Yellow","b2b73e",[40,87,145,150,153,196,305,323]],["Citrine","b09f36",[59,93,132,133,262]],["Buffy Citrine","96874d",[100,177,233]],["Dark Citrine","8b835b",[10,41,274,304]],["Light Grayish Olive","848061",[107,184]],["Krongbergs Green","84875e",[29]],["Olive","837e31",[96,201,254,258,277,310,334]],["Orange Citrine","986f2d",[212,342]],["Sudan Brown","a36752",[207,214,273]],["Olive Green","6b7140",[66,243,270,297]],["Light Brownish Olive","806e4b",[199,318]],["Deep Grayish Olive","635a3a",[146,343]],["Pale Raw Umber","71502f",[26,73,160,234,296]],["Sepia","644b1e",[24,288]],["Madder Brown","762c19",[28,79,98,173,237,275,323]],["Mars Brown Tobacco","653514",[19]],["Vandyke Brown","4b3317",[110,113,118,182,192,328]],["Turquoise Green","b5decc",[36,74,147,163,173,202,223,230,263,272,285,293,300,305,317,346]],["Glaucous Green","b4cdc2",[7,150,171,207,239,260]],["Dark Greenish Glaucous","b7c2a9",[264,311]],["Yellow Green","afd472",[111,141,276,326,334]],["Light Green Yellow","c7d14f",[61,289,291,311,346]],["Night Green","87c540",[19,32,158,326]],["Olive Yellow","a6a159",[124,211,265,347]],["Artemesia Green","709390",[293,312]],["Andover Green","6d7e77",[244,346]],["Rainette Green","8fa071",[73,162,188,266,301]],["Chromium Green","719470",[105,200,219,283]],["Pistachio Green","648f7b",[127,137]],["Sea Green","00b49b",[17,21,58,86,133,250,260,284,291,340,347]],["Benzol Green","00978d",[15,54,92,122,155,247,266,267,281,304,306]],["Light Porcelain Green","00908a",[44,193,328]],["Green","489b6e",[198,216,293]],["Dull Viridian Green","009465",[136,256,306,316]],["Oil Green","819238",[245,299,320]],["Diamine Green","1a7444",[38,146,217,242,251,313]],["Cossack Green","437742",[5,135,262,270,278,294,319,341,348]],["Lincoln Green","555832",[70,121,203,210,280,290]],["Blackish Olive","42533e",[109,318,336]],["Deep Slate Olive","253122",[189,229,268,303,310,321,332,341,342,348]],["Nile Blue","bce4e5",[25,250,268,302,306,330,345]],["Pale King's Blue","a7d4e4",[16,49,72,75,167,196,213,234,287]],["Light Glaucous Blue","a5c8d1",[54,93,119,152,178,204,227,320,339,341]],["Salvia Blue","97acc8",[29,129,135,139,142,188,209,212,237,272,294,321,330]],["Cobalt Green","96d1aa",[156,188,201,202,230,271,281,282,290,291,308,333]],["Calamine BLue","78cdd0",[20,41,65,159,176,255,261,287,291,300]],["Venice Green","62c6bf",[78,128,138,189,283,345]],["Cerulian Blue","0093a5",[1,63,99,125,148,227,240,264]],["Peacock Blue","00939b",[131,286]],["Green Blue","099197",[12,74,79,178,208,252,259,271,330]],["Olympic Blue","5a82b3",[44,67,157,194,231,274,324]],["Blue","006eb8",[49,51,88,143,154,186,191,215,257,267,295,333]],["Antwarp Blue","007190",[85,106,114,140,163,172,208,244,258,281,299,302,334]],["Helvetia Blue","005b8d",[39,48,161,187,218,259,312,347]],["Dark Medici Blue","547076",[160,224,241,249]],["Dusky Green","004f46",[94,219,225,278,284,318,332,338]],["Deep Lyons Blue","1c4286",[22,38,101,126,179,199,236,247,314,344]],["Violet Blue","40456a",[75,83,89,98,125,233,286,289,297,309,339]],["Vandar Poel's Blue","064f6e",[5,77,151,167,168,309,343]],["Dark Tyrian Blue","12354e",[2,60,67,119,141,245,279]],["Dull Violet Black","1e0e3f",[95,106,145,265,277,289,295,331]],["Deep Indigo","051230",[6,28,139,155,182,211,232]],["Deep Slate Green","112f2c",[84,149,166,271,318,325]],["Grayish Lavender - A","b5b1d8",[8,15,159,177,218,248,307]],["Grayish Lavender - B","c0a9b3",[47,56,174,187,235,327,329,338]],["Laelia Pink","ca92a8",[20,254,280,337]],["Lilac","b984af",[143,162,282,347]],["Eupatorium Purple","bf5892",[215,315,322]],["Light Mauve","9a72aa",[23,80,128,134,180,274,331]],["Aconite Violet","a36aa5",[43,64,90,187,220,257,269,301,307,324,344]],["Dull Blue Violet","80719e",[9,100]],["Dark Soft Violet","66629c",[64,127,197]],["Blue Violet","6450a1",[116,175,196,322,345]],["Purple Drab","84565b",[236]],["Deep Violet Plumbeous","70727c",[183,192,218]],["Veronia Purple","8c4c62",[13,24,168,183]],["Dark Slate Purple","704357",[225,248]],["Taupe Brown","7a4456",[57,123,174,224,275,280,288]],["Violet Carmine","713b4c",[337]],["Violet","4f4086",[42,56,130,156,164,181,205,214,226,316,331,335]],["Red Violet","59256a",[4,37,134,136,170,172,183,316]],["Cotinga Purple","501345",[61,181,238,253,307,329,348]],["Dusky Madder Violet","4e1d4c",[18,50,53,82,103,314]],["White","ffffff",[55]],["Neutral Gray","b6bfc1",[34,139,180,195,197,221,228,229,273,303,324,340]],["Mineral Gray","a2b0ad",[11,30]],["Warm Gray","a1a39a",[69,76,81,143,169,238,259,261]],["Slate Color","34454c",[27,33,57,140,202,243,245,251,253,263,296,329,335]],["Black","111314",[46,52,62,69,112,117,144,190,207,216,221,242,255,256,269,276,288,298,313,323,337,340,344]]];
+const BY={};
+D.forEach((c,i)=>c[2].forEach(k=>{(BY[k]=BY[k]||[]).push(i)}));
+let sel=[];
+
+function lab(r,g,b){
+  const c=[r,g,b].map(v=>{v/=255;return v>.04045?Math.pow((v+.055)/1.055,2.4):v/12.92});
+  let X=(c[0]*.4124+c[1]*.3576+c[2]*.1805)/.95047,
+      Y=(c[0]*.2126+c[1]*.7152+c[2]*.0722),
+      Z=(c[0]*.0193+c[1]*.1192+c[2]*.9505)/1.08883;
+  const f=t=>t>.008856?Math.cbrt(t):7.787*t+16/116;
+  X=f(X);Y=f(Y);Z=f(Z);
+  return [116*Y-16,500*(X-Y),200*(Y-Z)];
+}
+D.forEach(c=>{c[3]=lab(parseInt(c[1].slice(0,2),16),parseInt(c[1].slice(2,4),16),parseInt(c[1].slice(4,6),16))});
+function nearest(r,g,b){
+  const L=lab(r,g,b);let bi=0,bd=1e9;
+  D.forEach((c,i)=>{const d=(c[3][0]-L[0])**2+(c[3][1]-L[1])**2+(c[3][2]-L[2])**2;if(d<bd){bd=d;bi=i}});
+  return bi;
+}
+
+const slots=document.getElementById('slots'),grid=document.getElementById('grid'),
+      out=document.getElementById('out'),q=document.getElementById('q');
+
+function drawSlots(){
+  let h='';
+  for(let n=0;n<2;n++){
+    const i=sel[n];
+    if(i===undefined){
+      h+='<div class="slot empty"><div class="chip" style="background:transparent;border-style:dashed"></div><div class="nm">'+(n===0?'Erste Farbe wählen':'Zweite dazu, optional')+'</div></div>';
+    }else{
+      h+='<div class="slot"><div class="chip" style="background:#'+D[i][1]+'"></div><div style="min-width:0"><div class="nm">'+D[i][0]+'</div><div class="hx">#'+D[i][1]+'</div></div><button class="x" data-drop="'+n+'" aria-label="'+D[i][0]+' entfernen">&times;</button></div>';
+    }
+  }
+  slots.innerHTML=h;
+}
+slots.addEventListener('click',e=>{
+  const b=e.target.closest('[data-drop]');
+  if(b){sel.splice(+b.dataset.drop,1);render()}
+});
+
+function drawGrid(){
+  const f=q.value.trim().toLowerCase();
+  grid.innerHTML=D.map((c,i)=>
+    (!f||c[0].toLowerCase().includes(f))
+      ? '<button class="sw" style="background:#'+c[1]+'" data-i="'+i+'" aria-pressed="'+sel.includes(i)+'" aria-label="'+c[0]+'" title="'+c[0]+'"></button>'
+      : ''
+  ).join('');
+}
+grid.addEventListener('click',e=>{
+  const b=e.target.closest('.sw');if(!b)return;
+  const i=+b.dataset.i, at=sel.indexOf(i);
+  if(at>-1)sel.splice(at,1);
+  else if(sel.length<2)sel.push(i);
+  else sel=[sel[1],i];
+  render();
+});
+q.addEventListener('input',drawGrid);
+
+function cells(ids,stars){
+  return '<div class="row">'+ids.map(j=>
+    '<div class="cell'+(stars.includes(j)?' star':'')+'"><div class="bar2" style="background:#'+D[j][1]+'"></div><div class="nm">'+D[j][0]+'</div></div>'
+  ).join('')+'</div>';
+}
+function comboBlock(k,stars){
+  return '<div class="combo"><div class="no">Nr. '+k+'</div>'+cells(BY[k],stars)+'</div>';
+}
+
+function render(){
+  drawSlots();drawGrid();
+  if(!sel.length){
+    out.innerHTML='<div class="note">Tipp eine Farbe im Raster an. Mit zwei Farben zeigt die App, was als dritte dazwischen passt.</div>';
+    return;
+  }
+  if(sel.length===1){
+    const i=sel[0],cnt={};
+    D[i][2].forEach(k=>BY[k].forEach(j=>{if(j!==i)cnt[j]=(cnt[j]||0)+1}));
+    const ps=Object.keys(cnt).map(Number).sort((a,b)=>cnt[b]-cnt[a]||a-b);
+    let h='<section><h2>Passt zu '+D[i][0]+'</h2><p class="sub">'+ps.length+' Farben, nach Häufigkeit bei Wada sortiert</p><div class="pair">';
+    ps.forEach(j=>{h+='<div class="p"><div class="chip" style="background:#'+D[j][1]+'"></div><div style="min-width:0"><div class="nm">'+D[j][0]+'</div><div class="ct">'+cnt[j]+'\u00d7</div></div></div>'});
+    h+='</div></section><section><h2>Die Kombinationen</h2><p class="sub">'+D[i][2].length+' St\u00fcck</p>';
+    D[i][2].forEach(k=>{h+=comboBlock(k,[i])});
+    out.innerHTML=h+'</section>';
+    return;
+  }
+  const [a,b]=sel;
+  const both=D[a][2].filter(k=>D[b][2].includes(k));
+  let h='';
+  if(both.length){
+    h+='<section><h2>'+D[a][0]+' und '+D[b][0]+'</h2><p class="sub">Wada kombiniert die beiden in '+both.length+' Plate'+(both.length>1?'s':'')+'. Die dritte Farbe steht daneben.</p>';
+    both.forEach(k=>{h+=comboBlock(k,[a,b])});
+    h+='</section>';
+  }else{
+    const ca={},cb={};
+    D[a][2].forEach(k=>BY[k].forEach(j=>{if(j!==a)ca[j]=1}));
+    D[b][2].forEach(k=>BY[k].forEach(j=>{if(j!==b)cb[j]=1}));
+    const bridge=Object.keys(ca).map(Number).filter(j=>cb[j]&&j!==a&&j!==b);
+    h+='<section><h2>Kein direktes Paar</h2><p class="sub">Wada setzt '+D[a][0]+' und '+D[b][0]+' in keiner Plate zusammen. Das hei\u00dft nicht, dass es nicht geht.</p>';
+    if(bridge.length){
+      h+='<div class="note" style="margin-bottom:14px">Diese Farben tauchen mit beiden auf und k\u00f6nnen als drittes Teil vermitteln.</div><div class="pair">';
+      bridge.forEach(j=>{h+='<div class="p"><div class="chip" style="background:#'+D[j][1]+'"></div><div style="min-width:0"><div class="nm">'+D[j][0]+'</div></div></div>'});
+      h+='</div>';
+    }else{
+      h+='<div class="note">Auch keine gemeinsame Br\u00fcckenfarbe. Die beiden liegen bei Wada wirklich weit auseinander.</div>';
+    }
+    h+='</section>';
+  }
+  out.innerHTML=h;
+}
+
+const shot=document.getElementById('shot'),ctx=shot.getContext('2d',{willReadFrequently:true}),file=document.getElementById('file');
+document.getElementById('pick').addEventListener('click',()=>file.click());
+file.addEventListener('change',e=>{
+  const f=e.target.files[0];if(!f)return;
+  const img=new Image();
+  img.onload=()=>{
+    const w=720,hh=Math.round(img.height/img.width*w);
+    shot.width=w;shot.height=hh;ctx.drawImage(img,0,0,w,hh);
+    shot.style.display='block';
+    const d=ctx.getImageData(0,0,w,hh).data,m={};
+    for(let i=0;i<d.length;i+=64){
+      const k=(d[i]>>4)+','+(d[i+1]>>4)+','+(d[i+2]>>4);
+      (m[k]=m[k]||[0,0,0,0]);m[k][0]+=d[i];m[k][1]+=d[i+1];m[k][2]+=d[i+2];m[k][3]++;
+    }
+    let best=null;for(const k in m)if(!best||m[k][3]>best[3])best=m[k];
+    add(nearest(best[0]/best[3],best[1]/best[3],best[2]/best[3]));
+    URL.revokeObjectURL(img.src);
+  };
+  img.src=URL.createObjectURL(f);
+});
+shot.addEventListener('click',e=>{
+  const r=shot.getBoundingClientRect();
+  const p=ctx.getImageData(
+    Math.floor((e.clientX-r.left)/r.width*shot.width),
+    Math.floor((e.clientY-r.top)/r.height*shot.height),1,1).data;
+  add(nearest(p[0],p[1],p[2]));
+});
+function add(i){
+  if(sel.includes(i))return render();
+  if(sel.length<2)sel.push(i);else sel=[sel[1],i];
+  render();
+}
+
+render();
+</script>
+</body>
+</html>
